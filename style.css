@@ -94,20 +94,6 @@ p {
   color: rgba(255, 255, 255, 0.88);
 }
 
-.hero-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 4px;
-  padding: 12px 18px;
-  border-radius: 999px;
-  color: #123044;
-  background: #fff;
-  font-weight: 900;
-  text-decoration: none;
-  box-shadow: 0 12px 26px rgba(18, 48, 68, 0.2);
-}
-
 .panel {
   padding: 22px;
   margin: 18px 0;
