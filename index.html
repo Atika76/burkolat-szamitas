@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Burkoló lapkiosztó próba</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Próba webes verzió</p>
+          <h1>Burkoló lapkiosztó</h1>
+          <p>
+            Add meg a burkolandó felület és a lap méreteit, a program pedig kiszámolja a kezdő
+            és záró vágásokat, plusz egy első anyagbecslést.
+          </p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Alap adatok</h2>
+        <div class="grid">
+          <label>
+            Burkolandó felület hossza
+            <span class="input-row">
+              <input id="areaLength" type="number" min="0.1" step="0.01" value="7" />
+              <small>m</small>
+            </span>
+          </label>
+          <label>
+            Burkolandó felület szélessége
+            <span class="input-row">
+              <input id="areaWidth" type="number" min="0.1" step="0.01" value="3" />
+              <small>m</small>
+            </span>
+          </label>
+          <label>
+            Lap hosszabb oldala
+            <span class="input-row">
+              <input id="tileLong" type="number" min="1" step="1" value="60" />
+              <small>cm</small>
+            </span>
+          </label>
+          <label>
+            Lap rövidebb oldala
+            <span class="input-row">
+              <input id="tileShort" type="number" min="1" step="1" value="30" />
+              <small>cm</small>
+            </span>
+          </label>
+          <label>
+            Fuga / papucs méret
+            <select id="joint">
+              <option value="1">1 mm</option>
+              <option value="2" selected>2 mm</option>
+              <option value="3">3 mm</option>
+              <option value="5">5 mm</option>
+            </select>
+          </label>
+          <label>
+            Szélső dilatáció / hézag
+            <span class="input-row">
+              <input id="edgeGap" type="number" min="0" step="1" value="0" />
+              <small>mm</small>
+            </span>
+          </label>
+          <label>
+            Minimum elfogadott vágás
+            <span class="input-row">
+              <input id="minCut" type="number" min="0" step="1" value="80" />
+              <small>mm</small>
+            </span>
+          </label>
+          <label>
+            Lap iránya
+            <select id="orientation">
+              <option value="long-length" selected>60 cm a felület hosszában</option>
+              <option value="long-width">60 cm a felület szélességében</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Kiosztás módja</h2>
+        <div class="grid two">
+          <label>
+            7 m-es / hossz irány
+            <select id="lengthMode">
+              <option value="center" selected>Középre igazítva, két oldalt egyforma</option>
+              <option value="full">Egész lappal indul</option>
+            </select>
+          </label>
+          <label>
+            3 m-es / szélesség irány
+            <select id="widthMode">
+              <option value="center">Középre igazítva, két oldalt egyforma</option>
+              <option value="full" selected>Egész lappal indul</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Anyag becslés</h2>
+        <div class="grid">
+          <label>
+            Ráhagyás
+            <span class="input-row">
+              <input id="waste" type="number" min="0" step="1" value="10" />
+              <small>%</small>
+            </span>
+          </label>
+          <label>
+            Ragasztó fogyás
+            <span class="input-row">
+              <input id="adhesiveRate" type="number" min="0" step="0.1" value="5" />
+              <small>kg/m²</small>
+            </span>
+          </label>
+          <label>
+            Ragasztó zsák
+            <span class="input-row">
+              <input id="bagSize" type="number" min="1" step="1" value="25" />
+              <small>kg</small>
+            </span>
+          </label>
+          <label>
+            Lap vastagsága fugához
+            <span class="input-row">
+              <input id="tileThickness" type="number" min="1" step="1" value="8" />
+              <small>mm</small>
+            </span>
+          </label>
+          <label>
+            Fugázó sűrűség szorzó
+            <span class="input-row">
+              <input id="groutDensity" type="number" min="1" step="0.1" value="1.6" />
+              <small></small>
+            </span>
+          </label>
+          <label>
+            Papucs / lap becslés
+            <span class="input-row">
+              <input id="clipsPerTile" type="number" min="1" step="0.5" value="5" />
+              <small>db</small>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section class="results">
+        <article class="card primary">
+          <h2>Lapkiosztás</h2>
+          <div id="layoutResults"></div>
+        </article>
+        <article class="card">
+          <h2>Anyagok</h2>
+          <div id="materialResults"></div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="visual-head">
+          <h2>Egyszerű rajz</h2>
+          <p>Nem méretarányos műszaki terv, de gyorsan megmutatja, hol vannak a vágások.</p>
+        </div>
+        <div id="drawing" class="drawing"></div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
