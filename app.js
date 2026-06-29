@@ -48,39 +48,71 @@ function kg(number) {
 
 function calculateCentered(total, tile, joint, edgeGap, minCut) {
   const available = Math.max(0, total - edgeGap * 2);
-  const maxFull = Math.floor((available + joint) / (tile + joint));
-  const candidates = [];
+  const tolerance = 0.5;
+  const emptyResult = {
+    mode: "center",
+    full: 0,
+    startCut: 0,
+    endCut: 0,
+    pieces: 0,
+    joints: 0,
+    available,
+    warning: true,
+  };
 
+  if (available <= tolerance || tile <= tolerance) {
+    return emptyResult;
+  }
+
+  const maxFull = Math.floor((available + joint) / (tile + joint));
+  const exactFullCandidates = [];
+  const cutCandidates = [];
+
+  // Pontosan egész lapos kiosztások felismerése.
+  // Régi hiba: pl. 600 mm felület + 600 mm lap esetén a program két fél lapot javasolt.
+  for (let full = maxFull; full >= 1; full--) {
+    const joints = Math.max(0, full - 1);
+    const used = full * tile + joints * joint;
+
+    if (Math.abs(available - used) <= tolerance) {
+      exactFullCandidates.push({
+        mode: "center",
+        full,
+        startCut: 0,
+        endCut: 0,
+        pieces: full,
+        joints,
+        available,
+        warning: false,
+      });
+    }
+  }
+
+  // Középre igazított kiosztás két egyforma szélső vágással.
   for (let full = maxFull; full >= 0; full--) {
     const joints = full + 1;
     const cut = (available - full * tile - joints * joint) / 2;
 
-    if (cut >= 0 && cut <= tile) {
-      candidates.push({
+    if (cut > tolerance && cut <= tile + tolerance) {
+      const normalizedCut = Math.min(cut, tile);
+      cutCandidates.push({
         mode: "center",
         full,
-        startCut: cut,
-        endCut: cut,
-        pieces: full + (cut > 0.5 ? 2 : 0),
+        startCut: normalizedCut,
+        endCut: normalizedCut,
+        pieces: full + 2,
         joints,
         available,
-        warning: cut > 0.5 && cut < minCut,
+        warning: normalizedCut < minCut,
       });
     }
   }
 
   return (
-    candidates.find((item) => item.startCut >= minCut || item.startCut <= 0.5) ||
-    candidates[0] || {
-      mode: "center",
-      full: 0,
-      startCut: 0,
-      endCut: 0,
-      pieces: 0,
-      joints: 0,
-      available,
-      warning: true,
-    }
+    exactFullCandidates[0] ||
+    cutCandidates.find((item) => item.startCut >= minCut) ||
+    cutCandidates[0] ||
+    emptyResult
   );
 }
 
