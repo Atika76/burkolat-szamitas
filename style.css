@@ -196,7 +196,7 @@ p {
 .calculate-box button {
   border: 0;
   border-radius: 999px;
-  padding: 15px 22px;
+  padding: 15px 18px;
   color: #123044;
   background: #ffffff;
   font: inherit;
@@ -253,6 +253,7 @@ select {
   font: inherit;
   padding: 12px 13px;
   outline: none;
+  min-height: 46px;
 }
 
 input:focus,
@@ -305,6 +306,13 @@ select:focus {
   border-color: rgba(255, 122, 47, 0.28);
 }
 
+.optimization-card {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(117, 83, 217, 0.22), transparent 18rem),
+    linear-gradient(135deg, rgba(239, 237, 255, 0.98), rgba(255, 255, 255, 0.94));
+  border-color: rgba(117, 83, 217, 0.28);
+}
+
 .card.primary::before {
   background: linear-gradient(90deg, #1497d4, #12c7c0);
 }
@@ -313,12 +321,20 @@ select:focus {
   background: linear-gradient(90deg, #ff7a2f, #ffc247);
 }
 
+.optimization-card::before {
+  background: linear-gradient(90deg, #7553d9, #12c7c0, #24a85a);
+}
+
 .card.primary h2 {
   background: linear-gradient(135deg, #1497d4, #12c7c0);
 }
 
 .card:not(.primary) h2 {
   background: linear-gradient(135deg, #ff7a2f, #ffc247);
+}
+
+.optimization-card h2 {
+  background: linear-gradient(135deg, #7553d9, #12c7c0);
 }
 
 .card.wide::before {
@@ -361,6 +377,20 @@ select:focus {
   border: 1px solid rgba(255, 122, 47, 0.16);
 }
 
+.note strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.note-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.note-list li + li {
+  margin-top: 6px;
+}
+
 .ok {
   color: var(--good);
 }
@@ -389,6 +419,8 @@ select:focus {
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 12px;
+  touch-action: pan-x pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
 }
 
 svg {
@@ -409,9 +441,9 @@ svg {
   stroke: #c96d16;
 }
 
-.joint {
-  stroke: #ffffff;
-  stroke-width: 2;
+.diag {
+  stroke: rgba(117, 83, 217, 0.55);
+  stroke-width: 1.2;
 }
 
 .svg-label {
@@ -420,22 +452,75 @@ svg {
   font-weight: 700;
 }
 
-@media (max-width: 860px) {
+.svg-small {
+  fill: #5e3fc2;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+@media (max-width: 980px) {
   .grid,
-  .grid.two,
   .results,
   .calculate-box {
     grid-template-columns: 1fr;
   }
 
-  .save-row {
+  .grid.two {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .app {
+    width: min(100%, calc(100% - 16px));
+    padding: 16px 0 34px;
   }
 
   .hero,
   .panel,
   .card {
     border-radius: 18px;
+  }
+
+  .hero {
+    padding: 22px;
+  }
+
+  .action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .calculate-box button {
+    width: 100%;
+    padding: 14px 12px;
+  }
+
+  .save-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .save-row select {
+    grid-column: 1 / -1;
+  }
+
+  .visual-head {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  svg {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 560px) {
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .save-row {
+    grid-template-columns: 1fr;
   }
 }
 

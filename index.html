@@ -19,7 +19,8 @@
           <h1>Burkoló lapkiosztó</h1>
           <p>
             Add meg a burkolandó felület és a lap méreteit, a program pedig kiszámolja a kezdő
-            és záró vágásokat, a vágáslistát és az anyagbecslést.
+            és záró vágásokat, a vágáslistát, az anyagbecslést és a praktikus vágás-újrahasznosítási
+            javaslatokat.
           </p>
         </div>
       </section>
@@ -87,6 +88,14 @@
             <select id="orientation">
               <option value="long-length" selected>Első megadott oldal a felület hosszában</option>
               <option value="long-width">Első megadott oldal a felület szélességében</option>
+            </select>
+          </label>
+          <label>
+            Mintázat
+            <select id="pattern">
+              <option value="straight" selected>Egyenes kiosztás</option>
+              <option value="running-bond">Kötésben rakás (félkötés)</option>
+              <option value="diagonal">Átlós kiosztás (becslés)</option>
             </select>
           </label>
         </div>
@@ -172,11 +181,14 @@
         <div class="action-buttons">
           <button id="calculateButton" type="button">Számítás / frissítés</button>
           <button id="saveProjectButton" type="button">Projekt mentése</button>
+          <button id="exportProjectButton" type="button">Mentés fájlba</button>
+          <button id="importProjectButton" type="button">Projekt megnyitása</button>
           <button id="printButton" type="button">Nyomtatás / PDF</button>
         </div>
         <div>
           <p>
-            A számítás gépelés közben is frissül. Mentés után később ugyanitt visszatöltheted a projektet.
+            A számítás gépelés közben is frissül. A helyi mentés mellett JSON fájlba is elmentheted,
+            majd másik gépen vagy telefonon visszatöltheted.
           </p>
           <div class="save-row">
             <select id="savedProjects"></select>
@@ -184,6 +196,7 @@
             <button id="deleteProjectButton" type="button">Törlés</button>
           </div>
         </div>
+        <input id="importFile" type="file" accept="application/json,.json" hidden />
       </section>
 
       <section id="eredmenyek" class="results">
@@ -198,6 +211,10 @@
         <article class="card wide">
           <h2>Vágáslista</h2>
           <div id="cutListResults"></div>
+        </article>
+        <article class="card wide optimization-card">
+          <h2>Hulladék optimalizálás</h2>
+          <div id="optimizationResults"></div>
         </article>
       </section>
 

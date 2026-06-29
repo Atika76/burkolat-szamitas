@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const STORAGE_KEY = "burkolat-szamitas-projects-v1";
+const STORAGE_KEY = "burkolat-szamitas-projects-v2";
 
 const fields = [
   "projectName",
@@ -11,6 +11,7 @@ const fields = [
   "edgeGap",
   "minCut",
   "orientation",
+  "pattern",
   "lengthMode",
   "widthMode",
   "waste",
@@ -46,6 +47,30 @@ function kg(number) {
   })} kg`;
 }
 
+function squareM(number) {
+  return `${number.toLocaleString("hu-HU", { maximumFractionDigits: 2 })} m²`;
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function resultRow(label, val, className = "") {
+  return `<div class="result-row"><span>${label}</span><strong class="${className}">${val}</strong></div>`;
+}
+
+function patternLabel(pattern) {
+  return {
+    straight: "Egyenes kiosztás",
+    "running-bond": "Kötésben rakás (félkötés)",
+    diagonal: "Átlós kiosztás (becslés)",
+  }[pattern] || "Egyenes kiosztás";
+}
+
 function calculateCentered(total, tile, joint, edgeGap, minCut) {
   const available = Math.max(0, total - edgeGap * 2);
   const tolerance = 0.5;
@@ -68,8 +93,6 @@ function calculateCentered(total, tile, joint, edgeGap, minCut) {
   const exactFullCandidates = [];
   const cutCandidates = [];
 
-  // Pontosan egész lapos kiosztások felismerése.
-  // Régi hiba: pl. 600 mm felület + 600 mm lap esetén a program két fél lapot javasolt.
   for (let full = maxFull; full >= 1; full--) {
     const joints = Math.max(0, full - 1);
     const used = full * tile + joints * joint;
@@ -88,7 +111,6 @@ function calculateCentered(total, tile, joint, edgeGap, minCut) {
     }
   }
 
-  // Középre igazított kiosztás két egyforma szélső vágással.
   for (let full = maxFull; full >= 0; full--) {
     const joints = full + 1;
     const cut = (available - full * tile - joints * joint) / 2;
@@ -158,23 +180,9 @@ function calculateFullStart(total, tile, joint, edgeGap, minCut) {
 }
 
 function calculateDimension(total, tile, joint, edgeGap, minCut, mode) {
-  if (mode === "center") {
-    return calculateCentered(total, tile, joint, edgeGap, minCut);
-  }
-
-  return calculateFullStart(total, tile, joint, edgeGap, minCut);
-}
-
-function resultRow(label, value, className = "") {
-  return `<div class="result-row"><span>${label}</span><strong class="${className}">${value}</strong></div>`;
-}
-
-function escapeHtml(text) {
-  return String(text)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+  return mode === "center"
+    ? calculateCentered(total, tile, joint, edgeGap, minCut)
+    : calculateFullStart(total, tile, joint, edgeGap, minCut);
 }
 
 function createPieces(layout, tileSize) {
@@ -195,13 +203,71 @@ function createPieces(layout, tileSize) {
   return pieces;
 }
 
-function aggregatePieces(lengthPieces, widthPieces, tileLength, tileWidth) {
+function createHalfBondPieces(available, tile, joint) {
+  const tolerance = 0.5;
+  if (available <= tolerance || tile <= tolerance) return [];
+
+  const pieces = [];
+  let used = 0;
+  const firstPiece = Math.min(tile / 2, available);
+
+  if (firstPiece > tolerance) {
+    pieces.push({ size: firstPiece, cut: firstPiece < tile - tolerance });
+    used += firstPiece;
+  }
+
+  while (available - used > tolerance) {
+    if (pieces.length > 0) {
+      if (available - used <= joint + tolerance) break;
+      used += joint;
+    }
+
+    const remaining = available - used;
+    if (remaining <= tolerance) break;
+
+    if (remaining >= tile - tolerance) {
+      pieces.push({ size: tile, cut: false });
+      used += tile;
+    } else {
+      pieces.push({ size: remaining, cut: true });
+      used = available;
+      break;
+    }
+  }
+
+  return pieces;
+}
+
+function clonePieces(list) {
+  return list.map((item) => ({ ...item }));
+}
+
+function buildRowModel(widthPieces, lengthLayout, tileLength, pattern, joint) {
+  const baseCols = createPieces(lengthLayout, tileLength);
+
+  return widthPieces.map((rowPiece, rowIndex) => {
+    let cols = baseCols;
+
+    if (pattern === "running-bond" && rowIndex % 2 === 1) {
+      cols = createHalfBondPieces(lengthLayout.available, tileLength, joint);
+    }
+
+    return {
+      height: rowPiece.size,
+      cut: rowPiece.cut,
+      cols: clonePieces(cols),
+      shifted: pattern === "running-bond" && rowIndex % 2 === 1,
+    };
+  });
+}
+
+function aggregatePiecesFromRows(rows, tileLength, tileWidth) {
   const pieces = new Map();
 
-  widthPieces.forEach((row) => {
-    lengthPieces.forEach((col) => {
+  rows.forEach((row) => {
+    row.cols.forEach((col) => {
       const length = Math.round(col.size);
-      const width = Math.round(row.size);
+      const width = Math.round(row.height);
       const key = `${length}x${width}`;
       const existing =
         pieces.get(key) || {
@@ -209,117 +275,216 @@ function aggregatePieces(lengthPieces, widthPieces, tileLength, tileWidth) {
           width,
           count: 0,
           isFull: Math.abs(length - tileLength) < 1 && Math.abs(width - tileWidth) < 1,
+          cut: col.cut || row.cut,
+          areaMm2: length * width,
         };
       existing.count += 1;
+      existing.cut = existing.cut || col.cut || row.cut;
       pieces.set(key, existing);
     });
   });
 
   return [...pieces.values()].sort((a, b) => {
     if (a.isFull !== b.isFull) return a.isFull ? -1 : 1;
-    return b.count - a.count || b.length * b.width - a.length * a.width;
+    return b.count - a.count || b.areaMm2 - a.areaMm2;
   });
 }
 
-function renderCutList(lengthPieces, widthPieces, tileLength, tileWidth) {
-  const pieces = aggregatePieces(lengthPieces, widthPieces, tileLength, tileWidth);
+function getPatternNote(pattern) {
+  if (pattern === "running-bond") {
+    return "Kötésben rakásnál minden második sor fél lappal eltolva indul. A rajz és a vágáslista ezt figyelembe veszi.";
+  }
+
+  if (pattern === "diagonal") {
+    return "Átlós kiosztásnál a rajz és a vágáslista tájékoztató jellegű becslés. Az anyagráhagyás automatikusan legalább 15%-ra emelkedik.";
+  }
+
+  return "A számolás a fugát a lapok között számolja. Ha a széleken is fix fugát vagy dilatációt hagysz, azt a „szélső hézag” mezőben add meg.";
+}
+
+function renderCutList(rows, tileLength, tileWidth, pattern) {
+  const pieces = aggregatePiecesFromRows(rows, tileLength, tileWidth);
   const full = pieces.find((piece) => piece.isFull);
   const cuts = pieces.filter((piece) => !piece.isFull);
 
-  const rows = [];
+  const rowsHtml = [];
   if (full) {
-    rows.push(resultRow("Egész lap", `${full.count} db ${cm(full.length)} × ${cm(full.width)}`));
+    rowsHtml.push(resultRow("Egész lap", `${full.count} db ${cm(full.length)} × ${cm(full.width)}`));
   }
 
   cuts.forEach((piece) => {
-    rows.push(resultRow("Vágott darab", `${piece.count} db ${cm(piece.length)} × ${cm(piece.width)}`));
+    rowsHtml.push(resultRow("Vágott darab", `${piece.count} db ${cm(piece.length)} × ${cm(piece.width)}`));
   });
+
+  if (!rowsHtml.length) {
+    rowsHtml.push(resultRow("Nincs adat", "Adj meg érvényes méreteket"));
+  }
 
   $("cutListResults").innerHTML = `
     <div class="result-list">
-      ${rows.join("")}
+      ${rowsHtml.join("")}
     </div>
     <div class="note">
-      Ez darablista a kiosztás alapján. Azt mutatja, milyen méretű darabokra lesz szükség;
-      a táblákból való legkevesebb hulladékos kivágás optimalizálása külön fejlesztés lehet.
+      ${getPatternNote(pattern)}
     </div>
   `;
 }
 
-function drawLayout(lengthLayout, widthLayout, tileLength, tileWidth, joint) {
-  const lengthPieces = createPieces(lengthLayout, tileLength);
-  const widthPieces = createPieces(widthLayout, tileWidth);
+function estimateYieldFromFullTile(piece, tileLength, tileWidth) {
+  const alongLength = Math.max(1, Math.floor(tileLength / Math.max(piece.length, 1)));
+  const alongWidth = Math.max(1, Math.floor(tileWidth / Math.max(piece.width, 1)));
 
-  // A rajz V2-ben már nem vágja le automatikusan a 11., 12. stb. sort.
-  // Csak nagyon nagy kiosztásnál rövidít, hogy a böngésző ne lassuljon be.
+  if (Math.abs(piece.length - tileLength) < 1) {
+    return Math.max(1, Math.floor(tileWidth / Math.max(piece.width, 1)));
+  }
+
+  if (Math.abs(piece.width - tileWidth) < 1) {
+    return Math.max(1, Math.floor(tileLength / Math.max(piece.length, 1)));
+  }
+
+  return Math.max(1, alongLength * alongWidth);
+}
+
+function renderOptimization(rows, tileLength, tileWidth, minCut, pattern, lengthLayout, widthLayout) {
+  const pieces = aggregatePiecesFromRows(rows, tileLength, tileWidth);
+  const cutPieces = pieces.filter((piece) => !piece.isFull);
+  const reusablePieces = cutPieces.filter((piece) => piece.length >= minCut && piece.width >= minCut);
+  const reusableCount = reusablePieces.reduce((sum, piece) => sum + piece.count, 0);
+  const repeatedPieces = cutPieces.filter((piece) => piece.count > 1).slice(0, 4);
+  const cutAreaMm2 = cutPieces.reduce((sum, piece) => sum + piece.areaMm2 * piece.count, 0);
+  const suggestions = [];
+
+  if (lengthLayout.startCut > 0.5 && Math.abs(lengthLayout.startCut - lengthLayout.endCut) < 1) {
+    suggestions.push(`A hossz irány kezdő és záró vágása azonos (${cm(lengthLayout.startCut)}), ezért ezeket egyformán érdemes előkészíteni.`);
+  }
+
+  if (widthLayout.startCut > 0.5 && Math.abs(widthLayout.startCut - widthLayout.endCut) < 1) {
+    suggestions.push(`A szélesség irány szélső vágásai azonosak (${cm(widthLayout.startCut)}), ezért a vágások ismételhetők.`);
+  }
+
+  repeatedPieces.forEach((piece) => {
+    const yieldCount = estimateYieldFromFullTile(piece, tileLength, tileWidth);
+    if (yieldCount > 1) {
+      suggestions.push(
+        `${cm(piece.length)} × ${cm(piece.width)} darabból egy teljes lapból kb. ${yieldCount} db vágható.`
+      );
+    }
+  });
+
+  if (pattern === "running-bond") {
+    suggestions.push("Félkötésnél külön rakd félre a fél lapos indító darabokat, mert minden második sorban ismétlődnek.");
+  }
+
+  if (pattern === "diagonal") {
+    suggestions.push("Átlós kiosztásnál a leeső sarokdarabokat külön jelöld, mert több az ismétlődő háromszög/trapéz jellegű vágás.");
+  }
+
+  if (!suggestions.length) {
+    suggestions.push("A kisebb vágott darabokat külön csoportosítva gyorsabb a munkaközbeni visszakeresés.");
+  }
+
+  $("optimizationResults").innerHTML = `
+    <div class="result-list">
+      ${resultRow("Vágott darab típus", `${cutPieces.length} féle`)}
+      ${resultRow("Minimum újrahasznosítható vágás", `${reusableCount} db`)}
+      ${resultRow("Vágott darabok beépített felülete", squareM(cutAreaMm2 / 1000000))}
+      ${resultRow("Ismétlődő vágások", `${repeatedPieces.length} fő típus`)}
+    </div>
+    <div class="note">
+      <strong>Gyakorlati javaslatok:</strong>
+      <ul class="note-list">
+        ${suggestions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      </ul>
+    </div>
+  `;
+}
+
+function drawLayout(rows, joint, pattern, widthPiecesCount, lengthPiecesCount) {
   const maxCols = 60;
   const maxRows = 60;
-  const colsLimited = lengthPieces.length > maxCols;
-  const rowsLimited = widthPieces.length > maxRows;
-  const shownCols = colsLimited ? lengthPieces.slice(0, maxCols) : lengthPieces;
-  const shownRows = rowsLimited ? widthPieces.slice(0, maxRows) : widthPieces;
+  const colsLimited = rows.some((row) => row.cols.length > maxCols);
+  const rowsLimited = rows.length > maxRows;
+  const shownRows = rowsLimited ? rows.slice(0, maxRows) : rows;
+  const shownColRows = shownRows.map((row) => ({
+    ...row,
+    cols: colsLimited ? row.cols.slice(0, maxCols) : row.cols,
+  }));
 
-  const scaleX = 760 / Math.max(lengthLayout.available, 1);
-  const scaleY = 360 / Math.max(widthLayout.available, 1);
+  const totalWidthMm = shownColRows.reduce(
+    (max, row) => Math.max(max, row.cols.reduce((sum, col) => sum + col.size, 0) + Math.max(0, row.cols.length - 1) * joint),
+    1
+  );
+  const totalHeightMm = shownColRows.reduce((sum, row) => sum + row.height, 0) + Math.max(0, shownColRows.length - 1) * joint;
+
+  const scaleX = 760 / Math.max(totalWidthMm, 1);
+  const scaleY = 360 / Math.max(totalHeightMm, 1);
   const scale = Math.min(scaleX, scaleY);
   const pad = 44;
   const minPieceSize = 10;
-
   let y = pad;
   const rects = [];
-  const rowHeights = shownRows.map((row) => Math.max(minPieceSize, row.size * scale));
-  const colWidths = shownCols.map((col) => Math.max(minPieceSize, col.size * scale));
-  const drawnWidth = colWidths.reduce((sum, w) => sum + w, 0) + Math.max(0, shownCols.length - 1) * joint * scale;
-  const drawnHeight = rowHeights.reduce((sum, h) => sum + h, 0) + Math.max(0, shownRows.length - 1) * joint * scale;
-  const noteSpace = colsLimited || rowsLimited ? 42 : 24;
-  const width = Math.max(620, drawnWidth + pad * 2);
-  const height = Math.max(280, drawnHeight + pad * 2 + noteSpace);
 
-  shownRows.forEach((row, rowIndex) => {
+  shownColRows.forEach((row, rowIndex) => {
+    const h = Math.max(minPieceSize, row.height * scale);
     let x = pad;
-    const h = rowHeights[rowIndex];
 
-    shownCols.forEach((col, colIndex) => {
-      const w = colWidths[colIndex];
+    row.cols.forEach((col, colIndex) => {
+      const w = Math.max(minPieceSize, col.size * scale);
       const isCut = row.cut || col.cut;
-      rects.push(
-        `<rect class="tile ${isCut ? "cut" : ""}" x="${x}" y="${y}" width="${w}" height="${h}" rx="3"></rect>`
-      );
+      rects.push(`<rect class="tile ${isCut ? "cut" : ""}" x="${x}" y="${y}" width="${w}" height="${h}" rx="3"></rect>`);
 
-      if (rowIndex === 0 && (col.cut || colIndex === 0 || colIndex === shownCols.length - 1)) {
-        rects.push(
-          `<text class="svg-label" x="${x + 5}" y="${Math.max(18, y - 8)}">${cm(col.size)}</text>`
-        );
+      if (pattern === "diagonal") {
+        rects.push(`<line class="diag" x1="${x}" y1="${y + h}" x2="${x + w}" y2="${y}"></line>`);
       }
 
-      if (rowIndex === shownRows.length - 1 && row.cut && colIndex === Math.floor(shownCols.length / 2)) {
-        rects.push(
-          `<text class="svg-label" x="${x + 5}" y="${Math.min(height - 16, y + h + 18)}">${cm(row.size)} záró sor</text>`
-        );
+      if (rowIndex === 0 && (col.cut || colIndex === 0 || colIndex === row.cols.length - 1)) {
+        rects.push(`<text class="svg-label" x="${x + 5}" y="${Math.max(18, y - 8)}">${cm(col.size)}</text>`);
+      }
+
+      if (rowIndex === shownColRows.length - 1 && row.cut && colIndex === Math.floor(row.cols.length / 2)) {
+        rects.push(`<text class="svg-label" x="${x + 5}" y="${Math.min(520, y + h + 18)}">${cm(row.height)} záró sor</text>`);
+      }
+
+      if (pattern === "running-bond" && row.shifted && colIndex === 0) {
+        rects.push(`<text class="svg-small" x="${x + 5}" y="${y + 16}">félkötés</text>`);
       }
 
       x += w + joint * scale;
     });
 
-    if (row.cut || rowIndex === 0 || rowIndex === shownRows.length - 1) {
-      rects.push(`<text class="svg-label" x="6" y="${y + h / 2 + 4}">${cm(row.size)}</text>`);
+    if (row.cut || rowIndex === 0 || rowIndex === shownColRows.length - 1) {
+      rects.push(`<text class="svg-label" x="6" y="${y + h / 2 + 4}">${cm(row.height)}</text>`);
     }
 
     y += h + joint * scale;
   });
 
-  const visibleNote =
+  const drawnWidth = Math.max(
+    620,
+    shownColRows.reduce(
+      (max, row) => Math.max(max, row.cols.reduce((sum, col) => sum + Math.max(minPieceSize, col.size * scale), 0) + Math.max(0, row.cols.length - 1) * joint * scale),
+      0
+    ) + pad * 2
+  );
+  const drawnHeight = Math.max(280, y + 30);
+
+  let visibleNote =
     colsLimited || rowsLimited
-      ? `A rajz rövidítve van: ${lengthPieces.length} oszlopból ${shownCols.length}, ${widthPieces.length} sorból ${shownRows.length} látszik.`
-      : `Minden sor és oszlop látszik: ${lengthPieces.length} oszlop × ${widthPieces.length} sor.`;
+      ? `A rajz rövidítve van: ${lengthPiecesCount} oszlopból legfeljebb ${maxCols}, ${widthPiecesCount} sorból legfeljebb ${maxRows} látszik.`
+      : `Minden sor és oszlop látszik: ${lengthPiecesCount} oszlop × ${widthPiecesCount} sor.`;
+
+  if (pattern === "diagonal") {
+    visibleNote += " Átlós mintánál a rajz tájékoztató jellegű becslés.";
+  }
 
   $("drawing").innerHTML = `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Egyszerű lapkiosztási rajz">
+    <svg viewBox="0 0 ${drawnWidth} ${drawnHeight}" role="img" aria-label="Egyszerű lapkiosztási rajz">
       ${rects.join("")}
-      <text class="svg-label" x="${pad}" y="${height - 10}">${visibleNote}</text>
+      <text class="svg-label" x="${pad}" y="${drawnHeight - 10}">${escapeHtml(visibleNote)}</text>
     </svg>
   `;
 }
+
 function calculate() {
   const areaLengthMm = value("areaLength") * 1000;
   const areaWidthMm = value("areaWidth") * 1000;
@@ -329,72 +494,46 @@ function calculate() {
   const edgeGap = value("edgeGap");
   const minCut = value("minCut");
   const orientation = value("orientation");
+  const pattern = value("pattern");
 
   const tileLengthMm = orientation === "long-length" ? tileLongMm : tileShortMm;
   const tileWidthMm = orientation === "long-length" ? tileShortMm : tileLongMm;
 
-  const lengthLayout = calculateDimension(
-    areaLengthMm,
-    tileLengthMm,
-    joint,
-    edgeGap,
-    minCut,
-    value("lengthMode")
-  );
-  const widthLayout = calculateDimension(
-    areaWidthMm,
-    tileWidthMm,
-    joint,
-    edgeGap,
-    minCut,
-    value("widthMode")
-  );
+  const lengthLayout = calculateDimension(areaLengthMm, tileLengthMm, joint, edgeGap, minCut, value("lengthMode"));
+  const widthLayout = calculateDimension(areaWidthMm, tileWidthMm, joint, edgeGap, minCut, value("widthMode"));
 
   const lengthWarning = lengthLayout.warning ? "warning" : "ok";
   const widthWarning = widthLayout.warning ? "warning" : "ok";
   const lengthPieces = createPieces(lengthLayout, tileLengthMm);
   const widthPieces = createPieces(widthLayout, tileWidthMm);
+  const rows = buildRowModel(widthPieces, lengthLayout, tileLengthMm, pattern, joint);
 
   $("layoutResults").innerHTML = `
     <div class="result-list">
       ${resultRow("Lap iránya", `${cm(tileLengthMm)} × ${cm(tileWidthMm)}`)}
-      ${resultRow(
-        "Hossz irány kezdés",
-        lengthLayout.startCut > 0.5 ? cm(lengthLayout.startCut) : "egész lap",
-        lengthWarning
-      )}
+      ${resultRow("Mintázat", patternLabel(pattern))}
+      ${resultRow("Hossz irány kezdés", lengthLayout.startCut > 0.5 ? cm(lengthLayout.startCut) : "egész lap", lengthWarning)}
       ${resultRow("Hossz irány egész lap", `${lengthLayout.full} db`)}
-      ${resultRow(
-        "Hossz irány vége",
-        lengthLayout.endCut > 0.5 ? cm(lengthLayout.endCut) : "nincs vágás",
-        lengthWarning
-      )}
-      ${resultRow(
-        "Szélesség irány kezdés",
-        widthLayout.startCut > 0.5 ? cm(widthLayout.startCut) : "egész lap",
-        widthWarning
-      )}
+      ${resultRow("Hossz irány vége", lengthLayout.endCut > 0.5 ? cm(lengthLayout.endCut) : "nincs vágás", lengthWarning)}
+      ${resultRow("Szélesség irány kezdés", widthLayout.startCut > 0.5 ? cm(widthLayout.startCut) : "egész lap", widthWarning)}
       ${resultRow("Szélesség irány egész lap", `${widthLayout.full} db`)}
-      ${resultRow(
-        "Szélesség irány vége",
-        widthLayout.endCut > 0.5 ? cm(widthLayout.endCut) : "nincs vágás",
-        widthWarning
-      )}
+      ${resultRow("Szélesség irány vége", widthLayout.endCut > 0.5 ? cm(widthLayout.endCut) : "nincs vágás", widthWarning)}
       ${resultRow("Kiosztási darabok", `${lengthLayout.pieces} oszlop × ${widthLayout.pieces} sor`)}
+      ${pattern === "running-bond" ? resultRow("Eltolt sorok", `${Math.floor(widthPieces.length / 2)} db`) : ""}
     </div>
     <div class="note">
-      A számolás a fugát a lapok között számolja. Ha a széleken is fix fugát vagy dilatációt hagysz,
-      azt a „szélső hézag” mezőben add meg.
+      ${getPatternNote(pattern)}
     </div>
   `;
 
   const areaM2 = (areaLengthMm / 1000) * (areaWidthMm / 1000);
   const tileAreaM2 = (tileLongMm / 1000) * (tileShortMm / 1000);
   const baseTiles = Math.ceil(areaM2 / tileAreaM2);
-  const waste = value("waste") / 100;
-  const buyTiles = Math.ceil(baseTiles * (1 + waste));
+  const wasteInput = value("waste");
+  const effectiveWaste = pattern === "diagonal" ? Math.max(wasteInput, 15) : wasteInput;
+  const buyTiles = Math.ceil(baseTiles * (1 + effectiveWaste / 100));
   const adhesiveKg = areaM2 * value("adhesiveRate");
-  const bags = Math.ceil(adhesiveKg / value("bagSize"));
+  const bags = Math.ceil(adhesiveKg / Math.max(value("bagSize"), 1));
   const groutKgM2 =
     ((tileLongMm + tileShortMm) / (tileLongMm * tileShortMm)) *
     joint *
@@ -405,16 +544,19 @@ function calculate() {
   const horizontalJointSegments = Math.max(0, widthLayout.pieces - 1) * lengthLayout.pieces;
   const clipsPerLengthEdge = Math.max(1, Math.ceil(tileLengthMm / 350));
   const clipsPerWidthEdge = Math.max(1, Math.ceil(tileWidthMm / 350));
+  const patternClipMultiplier = pattern === "diagonal" ? 1.1 : 1;
   const clipBase =
     (verticalJointSegments * clipsPerWidthEdge + horizontalJointSegments * clipsPerLengthEdge) *
-    Number(value("clipMode"));
+    Number(value("clipMode")) *
+    patternClipMultiplier;
   const clips = Math.ceil(clipBase * (1 + value("clipWaste") / 100));
   const wedges = Math.ceil(Math.min(clips, Math.max(100, clips * 0.25)));
 
   $("materialResults").innerHTML = `
     <div class="result-list">
-      ${resultRow("Felület", `${areaM2.toLocaleString("hu-HU", { maximumFractionDigits: 2 })} m²`)}
+      ${resultRow("Felület", squareM(areaM2))}
       ${resultRow("Lap minimum", `${baseTiles} db`)}
+      ${resultRow("Alkalmazott ráhagyás", `${effectiveWaste}%`)}
       ${resultRow("Lap ráhagyással", `${buyTiles} db`)}
       ${resultRow("Ragasztó", `${kg(adhesiveKg)} ≈ ${bags} zsák`)}
       ${resultRow("Fugázó becslés", kg(groutTotal))}
@@ -423,13 +565,13 @@ function calculate() {
       ${resultRow("Ék becslés", `${wedges} db, mert újrahasználható`)}
     </div>
     <div class="note">
-      A ragasztó és fugázó gyártónként eltér. Ez munkaközbeni becslés; pontosításhoz megadható
-      a választott termék gyártói fogyása.
+      A ragasztó és fugázó gyártónként eltér. Ez munkaközbeni becslés; pontosításhoz megadható a választott termék gyártói fogyása.
     </div>
   `;
 
-  drawLayout(lengthLayout, widthLayout, tileLengthMm, tileWidthMm, joint);
-  renderCutList(lengthPieces, widthPieces, tileLengthMm, tileWidthMm);
+  renderCutList(rows, tileLengthMm, tileWidthMm, pattern);
+  renderOptimization(rows, tileLengthMm, tileWidthMm, minCut, pattern, lengthLayout, widthLayout);
+  drawLayout(rows, joint, pattern, widthPieces.length, lengthPieces.length);
 }
 
 function getSavedProjects() {
@@ -450,6 +592,7 @@ function collectProject() {
     data[id] = $(id).value;
   });
   return {
+    version: 2,
     savedAt: new Date().toISOString(),
     data,
   };
@@ -486,6 +629,47 @@ function saveProject() {
   $("savedProjects").value = name;
 }
 
+function downloadJsonFile(filename, payload) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportCurrentProject() {
+  const project = collectProject();
+  const name = (String(value("projectName") || "burkolat-projekt").trim() || "burkolat-projekt")
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9áéíóöőúüű-]+/gi, "-")
+    .replaceAll(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  downloadJsonFile(`${name || "burkolat-projekt"}.json`, project);
+}
+
+function importProjectFromFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || "{}"));
+      if (!parsed.data) {
+        alert("A kiválasztott fájl nem burkolat projekt export.");
+        return;
+      }
+      applyProject(parsed);
+      saveProject();
+    } catch {
+      alert("Nem sikerült beolvasni a projekt fájlt.");
+    }
+  };
+  reader.readAsText(file, "utf-8");
+}
+
 fields.forEach((id) => {
   $(id).addEventListener("input", calculate);
   $(id).addEventListener("change", calculate);
@@ -513,6 +697,19 @@ $("deleteProjectButton").addEventListener("click", () => {
   delete projects[name];
   setSavedProjects(projects);
   refreshSavedProjects();
+});
+
+$("exportProjectButton").addEventListener("click", () => {
+  exportCurrentProject();
+});
+
+$("importProjectButton").addEventListener("click", () => {
+  $("importFile").click();
+});
+
+$("importFile").addEventListener("change", (event) => {
+  importProjectFromFile(event.target.files?.[0]);
+  event.target.value = "";
 });
 
 $("printButton").addEventListener("click", () => {
