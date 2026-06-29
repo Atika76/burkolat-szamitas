@@ -18,50 +18,69 @@
           <p class="eyebrow">Burkoló segédprogram</p>
           <h1>Burkoló lapkiosztó</h1>
           <p>
-            Add meg a burkolandó felület és a lap méreteit, a program pedig kiszámolja a kezdő
-            és záró vágásokat, a vágáslistát, az anyagbecslést és a praktikus vágás-újrahasznosítási
-            javaslatokat.
+            Saját használatra készült gyors számoló: lapkiosztás, vágáslista, doboz, ragasztó,
+            fugázó, talp/papucs, ék, lábazat, nyíláslevonás és több felület összesítése.
           </p>
         </div>
+      </section>
+
+      <section class="panel quick-panel">
+        <h2>Gyors számítás telefonra</h2>
+        <p class="panel-text">Ha csak gyorsan kell anyagot becsülni, ezt használd. Az „Átemelés” gombbal beteszi a fő számításba.</p>
+        <div class="grid quick-grid">
+          <label>Hossz
+            <span class="input-row"><input id="quickLength" type="number" min="0.1" step="0.01" value="7" /><small>m</small></span>
+          </label>
+          <label>Szélesség
+            <span class="input-row"><input id="quickWidth" type="number" min="0.1" step="0.01" value="3" /><small>m</small></span>
+          </label>
+          <label>Lap hosszabb oldala
+            <span class="input-row"><input id="quickTileLong" type="number" min="1" step="1" value="60" /><small>cm</small></span>
+          </label>
+          <label>Lap rövidebb oldala
+            <span class="input-row"><input id="quickTileShort" type="number" min="1" step="1" value="30" /><small>cm</small></span>
+          </label>
+          <label>Ráhagyás
+            <span class="input-row"><input id="quickWaste" type="number" min="0" step="1" value="10" /><small>%</small></span>
+          </label>
+          <label>Doboz tartalma
+            <span class="input-row"><input id="quickBoxM2" type="number" min="0" step="0.01" value="1.44" /><small>m²</small></span>
+          </label>
+          <label>Ragasztó
+            <span class="input-row"><input id="quickAdhesiveRate" type="number" min="0" step="0.1" value="5" /><small>kg/m²</small></span>
+          </label>
+          <label>Zsák
+            <span class="input-row"><input id="quickBagSize" type="number" min="1" step="1" value="25" /><small>kg</small></span>
+          </label>
+        </div>
+        <div class="quick-actions">
+          <button id="quickToMainButton" type="button">Átemelés a fő számításba</button>
+        </div>
+        <div id="quickResults" class="quick-results"></div>
       </section>
 
       <section class="panel">
         <h2>Alap adatok</h2>
         <div class="grid">
-          <label>
-            Projekt neve
+          <label>Projekt neve
             <input id="projectName" type="text" value="Burkolatszámítás" />
           </label>
-          <label>
-            Burkolandó felület hossza
-            <span class="input-row">
-              <input id="areaLength" type="number" min="0.1" step="0.01" value="7" />
-              <small>m</small>
-            </span>
+          <label>Helyiség / felület neve
+            <input id="surfaceName" type="text" value="Fürdő padló" />
           </label>
-          <label>
-            Burkolandó felület szélessége
-            <span class="input-row">
-              <input id="areaWidth" type="number" min="0.1" step="0.01" value="3" />
-              <small>m</small>
-            </span>
+          <label>Burkolandó felület hossza
+            <span class="input-row"><input id="areaLength" type="number" min="0.1" step="0.01" value="7" /><small>m</small></span>
           </label>
-          <label>
-            Lap egyik oldala
-            <span class="input-row">
-              <input id="tileLong" type="number" min="1" step="1" value="60" />
-              <small>cm</small>
-            </span>
+          <label>Burkolandó felület szélessége
+            <span class="input-row"><input id="areaWidth" type="number" min="0.1" step="0.01" value="3" /><small>m</small></span>
           </label>
-          <label>
-            Lap másik oldala
-            <span class="input-row">
-              <input id="tileShort" type="number" min="1" step="1" value="30" />
-              <small>cm</small>
-            </span>
+          <label>Lap egyik oldala
+            <span class="input-row"><input id="tileLong" type="number" min="1" step="1" value="60" /><small>cm</small></span>
           </label>
-          <label>
-            Fuga / papucs méret
+          <label>Lap másik oldala
+            <span class="input-row"><input id="tileShort" type="number" min="1" step="1" value="30" /><small>cm</small></span>
+          </label>
+          <label>Fuga / papucs méret
             <select id="joint">
               <option value="1">1 mm</option>
               <option value="2" selected>2 mm</option>
@@ -69,29 +88,19 @@
               <option value="5">5 mm</option>
             </select>
           </label>
-          <label>
-            Szélső dilatáció / hézag
-            <span class="input-row">
-              <input id="edgeGap" type="number" min="0" step="1" value="0" />
-              <small>mm</small>
-            </span>
+          <label>Szélső dilatáció / hézag
+            <span class="input-row"><input id="edgeGap" type="number" min="0" step="1" value="0" /><small>mm</small></span>
           </label>
-          <label>
-            Minimum elfogadott vágás
-            <span class="input-row">
-              <input id="minCut" type="number" min="0" step="1" value="80" />
-              <small>mm</small>
-            </span>
+          <label>Minimum elfogadott vágás
+            <span class="input-row"><input id="minCut" type="number" min="0" step="1" value="80" /><small>mm</small></span>
           </label>
-          <label>
-            Lap iránya
+          <label>Lap iránya
             <select id="orientation">
               <option value="long-length" selected>Első megadott oldal a felület hosszában</option>
               <option value="long-width">Első megadott oldal a felület szélességében</option>
             </select>
           </label>
-          <label>
-            Mintázat
+          <label>Mintázat
             <select id="pattern">
               <option value="straight" selected>Egyenes kiosztás</option>
               <option value="running-bond">Kötésben rakás (félkötés)</option>
@@ -104,15 +113,13 @@
       <section class="panel">
         <h2>Kiosztás módja</h2>
         <div class="grid two">
-          <label>
-            Felület hossza irány
+          <label>Felület hossza irány
             <select id="lengthMode">
               <option value="center" selected>Középre igazítva, két oldalt egyforma</option>
               <option value="full">Egész lappal indul</option>
             </select>
           </label>
-          <label>
-            Felület szélessége irány
+          <label>Felület szélessége irány
             <select id="widthMode">
               <option value="center">Középre igazítva, két oldalt egyforma</option>
               <option value="full" selected>Egész lappal indul</option>
@@ -122,57 +129,109 @@
       </section>
 
       <section class="panel">
-        <h2>Anyag és szintező becslés</h2>
+        <h2>Anyag, doboz, talp és ék</h2>
         <div class="grid">
-          <label>
-            Ráhagyás
-            <span class="input-row">
-              <input id="waste" type="number" min="0" step="1" value="10" />
-              <small>%</small>
-            </span>
+          <label>Ráhagyás
+            <span class="input-row"><input id="waste" type="number" min="0" step="1" value="10" /><small>%</small></span>
           </label>
-          <label>
-            Ragasztófelhasználás
-            <span class="input-row">
-              <input id="adhesiveRate" type="number" min="0" step="0.1" value="5" />
-              <small>kg/m²</small>
-            </span>
+          <label>Doboz tartalma
+            <span class="input-row"><input id="boxM2" type="number" min="0" step="0.01" value="1.44" /><small>m²</small></span>
           </label>
-          <label>
-            Ragasztó zsák
-            <span class="input-row">
-              <input id="bagSize" type="number" min="1" step="1" value="25" />
-              <small>kg</small>
-            </span>
+          <label>Lap / doboz
+            <span class="input-row"><input id="boxPieces" type="number" min="0" step="1" value="8" /><small>db</small></span>
           </label>
-          <label>
-            Lap vastagsága fugához
-            <span class="input-row">
-              <input id="tileThickness" type="number" min="1" step="1" value="8" />
-              <small>mm</small>
-            </span>
+          <label>Ragasztófelhasználás
+            <span class="input-row"><input id="adhesiveRate" type="number" min="0" step="0.1" value="5" /><small>kg/m²</small></span>
           </label>
-          <label>
-            Fugázó sűrűség szorzó
-            <span class="input-row">
-              <input id="groutDensity" type="number" min="1" step="0.1" value="1.6" />
-              <small></small>
-            </span>
+          <label>Ragasztó zsák
+            <span class="input-row"><input id="bagSize" type="number" min="1" step="1" value="25" /><small>kg</small></span>
           </label>
-          <label>
-            Papucs számítás
+          <label>Lap vastagsága fugához
+            <span class="input-row"><input id="tileThickness" type="number" min="1" step="1" value="8" /><small>mm</small></span>
+          </label>
+          <label>Fugázó sűrűség szorzó
+            <span class="input-row"><input id="groutDensity" type="number" min="1" step="0.1" value="1.6" /><small></small></span>
+          </label>
+          <label>Papucs számítás
             <select id="clipMode">
               <option value="1" selected>Normál kiosztás</option>
               <option value="1.35">Sűrűbb kiosztás nagyobb laphoz</option>
               <option value="0.75">Takarékos becslés</option>
             </select>
           </label>
-          <label>
-            Papucs tartalék
-            <span class="input-row">
-              <input id="clipWaste" type="number" min="0" step="1" value="10" />
-              <small>%</small>
-            </span>
+          <label>Papucs osztástáv
+            <span class="input-row"><input id="clipSpacing" type="number" min="150" step="10" value="350" /><small>mm</small></span>
+          </label>
+          <label>Széleknél papucs
+            <select id="edgeClipMode">
+              <option value="no" selected>Csak belső fugáknál</option>
+              <option value="yes">Belső fugák + szélek</option>
+            </select>
+          </label>
+          <label>Papucs tartalék
+            <span class="input-row"><input id="clipWaste" type="number" min="0" step="1" value="10" /><small>%</small></span>
+          </label>
+          <label>Ék arány
+            <span class="input-row"><input id="wedgeRatio" type="number" min="5" max="100" step="5" value="25" /><small>%</small></span>
+          </label>
+          <label>Minimum ék készlet
+            <span class="input-row"><input id="wedgeMin" type="number" min="0" step="10" value="100" /><small>db</small></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Saját gyakori anyagbeállítások</h2>
+        <p class="panel-text">Itt elmentheted például a 60×30-as, 60×60-as vagy 120×60-as laphoz tartozó megszokott beállításokat.</p>
+        <div class="preset-row">
+          <input id="presetName" type="text" placeholder="Pl. 60×30 lap, 2 mm papucs" />
+          <select id="presetSelect"></select>
+          <button id="savePresetButton" type="button">Beállítás mentése</button>
+          <button id="loadPresetButton" type="button">Betöltés</button>
+          <button id="deletePresetButton" type="button">Törlés</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Nyíláslevonás és lábazat</h2>
+        <p class="panel-text">Falburkolásnál ide írd az ajtót, ablakot vagy más kivonandó részt. Padlónál hagyd nullán.</p>
+        <div class="openings-grid">
+          <div class="small-head">Kivonandó rész</div>
+          <div class="small-head">Szélesség</div>
+          <div class="small-head">Magasság</div>
+          <div class="small-head">Darab</div>
+          <input id="opening1Name" type="text" value="Ajtó" />
+          <span class="input-row"><input id="opening1Width" type="number" min="0" step="0.01" value="0" /><small>m</small></span>
+          <span class="input-row"><input id="opening1Height" type="number" min="0" step="0.01" value="0" /><small>m</small></span>
+          <input id="opening1Count" type="number" min="0" step="1" value="1" />
+          <input id="opening2Name" type="text" value="Ablak" />
+          <span class="input-row"><input id="opening2Width" type="number" min="0" step="0.01" value="0" /><small>m</small></span>
+          <span class="input-row"><input id="opening2Height" type="number" min="0" step="0.01" value="0" /><small>m</small></span>
+          <input id="opening2Count" type="number" min="0" step="1" value="1" />
+          <input id="opening3Name" type="text" value="Egyéb" />
+          <span class="input-row"><input id="opening3Width" type="number" min="0" step="0.01" value="0" /><small>m</small></span>
+          <span class="input-row"><input id="opening3Height" type="number" min="0" step="0.01" value="0" /><small>m</small></span>
+          <input id="opening3Count" type="number" min="0" step="1" value="1" />
+        </div>
+        <div class="grid skirting-grid">
+          <label>Lábazat / szegély
+            <select id="skirtingEnabled">
+              <option value="no" selected>Nem számolom</option>
+              <option value="yes">Számolja hozzá</option>
+            </select>
+          </label>
+          <label>Lábazat hossza
+            <span class="input-row"><input id="skirtingPerimeter" type="number" min="0" step="0.01" value="0" /><small>m</small></span>
+            <small class="help">0 esetén a program a helyiség kerületével számol.</small>
+          </label>
+          <label>Ajtónyílás levonás
+            <span class="input-row"><input id="skirtingDoor" type="number" min="0" step="0.01" value="0" /><small>m</small></span>
+          </label>
+          <label>Lábazat magasság
+            <span class="input-row"><input id="skirtingHeight" type="number" min="1" step="1" value="10" /><small>cm</small></span>
+          </label>
+          <label>Lábazat ráhagyás
+            <span class="input-row"><input id="skirtingWaste" type="number" min="0" step="1" value="10" /><small>%</small></span>
           </label>
         </div>
       </section>
@@ -180,15 +239,16 @@
       <section class="calculate-box">
         <div class="action-buttons">
           <button id="calculateButton" type="button">Számítás / frissítés</button>
+          <button id="addSurfaceButton" type="button">Felület hozzáadása</button>
           <button id="saveProjectButton" type="button">Projekt mentése</button>
           <button id="exportProjectButton" type="button">Mentés fájlba</button>
           <button id="importProjectButton" type="button">Projekt megnyitása</button>
+          <button id="copySummaryButton" type="button">Összesítő másolása</button>
           <button id="printButton" type="button">Nyomtatás / PDF</button>
         </div>
         <div>
           <p>
-            A számítás gépelés közben is frissül. A helyi mentés mellett JSON fájlba is elmentheted,
-            majd másik gépen vagy telefonon visszatöltheted.
+            A számítás gépelés közben is frissül. A mentett projekt és a JSON fájl tartalmazza a több felület összesítőt is.
           </p>
           <div class="save-row">
             <select id="savedProjects"></select>
@@ -215,6 +275,10 @@
         <article class="card wide optimization-card">
           <h2>Hulladék optimalizálás</h2>
           <div id="optimizationResults"></div>
+        </article>
+        <article class="card wide summary-card">
+          <h2>Több felület összesítő</h2>
+          <div id="surfaceSummaryResults"></div>
         </article>
       </section>
 
