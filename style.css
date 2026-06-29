@@ -458,6 +458,19 @@ svg {
   font-weight: 800;
 }
 
+.svg-note-bg {
+  fill: rgba(255, 255, 255, 0.92);
+  stroke: rgba(30, 121, 156, 0.2);
+  stroke-width: 1;
+}
+
+.svg-note {
+  fill: #123044;
+  font-size: 13px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
 @media (max-width: 980px) {
   .grid,
   .results,

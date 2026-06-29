@@ -466,7 +466,9 @@ function drawLayout(rows, joint, pattern, widthPiecesCount, lengthPiecesCount) {
       0
     ) + pad * 2
   );
-  const drawnHeight = Math.max(280, y + 30);
+  const footerTop = y + 8;
+  const footerHeight = 36;
+  const drawnHeight = Math.max(280, footerTop + footerHeight + 10);
 
   let visibleNote =
     colsLimited || rowsLimited
@@ -480,7 +482,8 @@ function drawLayout(rows, joint, pattern, widthPiecesCount, lengthPiecesCount) {
   $("drawing").innerHTML = `
     <svg viewBox="0 0 ${drawnWidth} ${drawnHeight}" role="img" aria-label="Egyszerű lapkiosztási rajz">
       ${rects.join("")}
-      <text class="svg-label" x="${pad}" y="${drawnHeight - 10}">${escapeHtml(visibleNote)}</text>
+      <rect class="svg-note-bg" x="${pad - 8}" y="${footerTop}" width="${Math.max(260, drawnWidth - pad * 2 + 16)}" height="${footerHeight}" rx="10"></rect>
+      <text class="svg-note" x="${drawnWidth / 2}" y="${footerTop + 22}">${escapeHtml(visibleNote)}</text>
     </svg>
   `;
 }

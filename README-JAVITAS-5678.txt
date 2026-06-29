@@ -1,4 +1,4 @@
-Burkoló lapkiosztó – 5-6-7-8 pont fejlesztések
+Burkoló lapkiosztó – 5-6-7-8 pont fejlesztések + rajz alja felirat fix
 
 Beépített újdonságok:
 
@@ -28,6 +28,11 @@ Beépített újdonságok:
 - Mobilon egymás alá rendeződő panelek.
 - Rajz görgethető és nagyítható nézetre optimalizálva.
 - Mentési sáv mobilon is kezelhetőbb.
+
+Plusz rajz megjelenítési javítás
+- Az alsó "Minden sor és oszlop látszik..." felirat külön alsó sávba került.
+- Nem csúszik rá a bal alsó méretfeliratokra.
+- Tisztábban olvasható mobilon és asztali nézetben is.
 
 Megjegyzés:
 - Az átlós kiosztás a jelen verzióban tájékoztató becslés, nem teljes műszaki optimalizáló.
