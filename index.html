@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Burkoló lapkiosztó próba</title>
+    <title>Burkoló lapkiosztó</title>
     <meta name="theme-color" content="#1497d4" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
@@ -15,11 +15,11 @@
     <main class="app">
       <section class="hero">
         <div>
-          <p class="eyebrow">Próba webes verzió</p>
+          <p class="eyebrow">Burkoló segédprogram</p>
           <h1>Burkoló lapkiosztó</h1>
           <p>
             Add meg a burkolandó felület és a lap méreteit, a program pedig kiszámolja a kezdő
-            és záró vágásokat, plusz egy első anyagbecslést.
+            és záró vágásokat, a vágáslistát és az anyagbecslést.
           </p>
         </div>
       </section>
@@ -27,6 +27,10 @@
       <section class="panel">
         <h2>Alap adatok</h2>
         <div class="grid">
+          <label>
+            Projekt neve
+            <input id="projectName" type="text" value="Burkolat számítás" />
+          </label>
           <label>
             Burkolandó felület hossza
             <span class="input-row">
@@ -109,7 +113,7 @@
       </section>
 
       <section class="panel">
-        <h2>Anyag becslés</h2>
+        <h2>Anyag és szintező becslés</h2>
         <div class="grid">
           <label>
             Ráhagyás
@@ -147,20 +151,39 @@
             </span>
           </label>
           <label>
-            Papucs / lap becslés
+            Papucs számítás
+            <select id="clipMode">
+              <option value="1" selected>Normál kiosztás</option>
+              <option value="1.35">Sűrűbb kiosztás nagyobb laphoz</option>
+              <option value="0.75">Takarékos becslés</option>
+            </select>
+          </label>
+          <label>
+            Papucs tartalék
             <span class="input-row">
-              <input id="clipsPerTile" type="number" min="1" step="0.5" value="5" />
-              <small>db</small>
+              <input id="clipWaste" type="number" min="0" step="1" value="10" />
+              <small>%</small>
             </span>
           </label>
         </div>
       </section>
 
       <section class="calculate-box">
-        <button id="calculateButton" type="button">Számítás / frissítés</button>
-        <p>
-          A számítás gépelés közben is frissül, de ezzel a gombbal egyből az eredményekhez ugorhatsz.
-        </p>
+        <div class="action-buttons">
+          <button id="calculateButton" type="button">Számítás / frissítés</button>
+          <button id="saveProjectButton" type="button">Projekt mentése</button>
+          <button id="printButton" type="button">Nyomtatás / PDF</button>
+        </div>
+        <div>
+          <p>
+            A számítás gépelés közben is frissül. Mentés után később ugyanitt visszatöltheted a projektet.
+          </p>
+          <div class="save-row">
+            <select id="savedProjects"></select>
+            <button id="loadProjectButton" type="button">Betöltés</button>
+            <button id="deleteProjectButton" type="button">Törlés</button>
+          </div>
+        </div>
       </section>
 
       <section id="eredmenyek" class="results">
@@ -171,6 +194,10 @@
         <article class="card">
           <h2>Anyagok</h2>
           <div id="materialResults"></div>
+        </article>
+        <article class="card wide">
+          <h2>Vágáslista</h2>
+          <div id="cutListResults"></div>
         </article>
       </section>
 

@@ -1,6 +1,8 @@
 const $ = (id) => document.getElementById(id);
+const STORAGE_KEY = "burkolat-szamitas-projects-v1";
 
 const fields = [
+  "projectName",
   "areaLength",
   "areaWidth",
   "tileLong",
@@ -16,12 +18,16 @@ const fields = [
   "bagSize",
   "tileThickness",
   "groutDensity",
-  "clipsPerTile",
+  "clipMode",
+  "clipWaste",
 ];
 
 function value(id) {
   const element = $(id);
-  return element.tagName === "SELECT" ? element.value : Number(element.value || 0);
+  if (element.tagName === "SELECT" || element.type === "text") {
+    return element.value;
+  }
+  return Number(element.value || 0);
 }
 
 function mm(number) {
@@ -131,6 +137,14 @@ function resultRow(label, value, className = "") {
   return `<div class="result-row"><span>${label}</span><strong class="${className}">${value}</strong></div>`;
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
 function createPieces(layout, tileSize) {
   const pieces = [];
 
@@ -147,6 +161,57 @@ function createPieces(layout, tileSize) {
   }
 
   return pieces;
+}
+
+function aggregatePieces(lengthPieces, widthPieces, tileLength, tileWidth) {
+  const pieces = new Map();
+
+  widthPieces.forEach((row) => {
+    lengthPieces.forEach((col) => {
+      const length = Math.round(col.size);
+      const width = Math.round(row.size);
+      const key = `${length}x${width}`;
+      const existing =
+        pieces.get(key) || {
+          length,
+          width,
+          count: 0,
+          isFull: Math.abs(length - tileLength) < 1 && Math.abs(width - tileWidth) < 1,
+        };
+      existing.count += 1;
+      pieces.set(key, existing);
+    });
+  });
+
+  return [...pieces.values()].sort((a, b) => {
+    if (a.isFull !== b.isFull) return a.isFull ? -1 : 1;
+    return b.count - a.count || b.length * b.width - a.length * a.width;
+  });
+}
+
+function renderCutList(lengthPieces, widthPieces, tileLength, tileWidth) {
+  const pieces = aggregatePieces(lengthPieces, widthPieces, tileLength, tileWidth);
+  const full = pieces.find((piece) => piece.isFull);
+  const cuts = pieces.filter((piece) => !piece.isFull);
+
+  const rows = [];
+  if (full) {
+    rows.push(resultRow("Egész lap", `${full.count} db ${cm(full.length)} × ${cm(full.width)}`));
+  }
+
+  cuts.forEach((piece) => {
+    rows.push(resultRow("Vágott darab", `${piece.count} db ${cm(piece.length)} × ${cm(piece.width)}`));
+  });
+
+  $("cutListResults").innerHTML = `
+    <div class="result-list">
+      ${rows.join("")}
+    </div>
+    <div class="note">
+      Ez darablista a kiosztás alapján. Azt mutatja, milyen méretű darabokra lesz szükség;
+      a táblákból való legkevesebb hulladékos kivágás optimalizálása külön fejlesztés lehet.
+    </div>
+  `;
 }
 
 function drawLayout(lengthLayout, widthLayout, tileLength, tileWidth, joint) {
@@ -243,6 +308,8 @@ function calculate() {
 
   const lengthWarning = lengthLayout.warning ? "warning" : "ok";
   const widthWarning = widthLayout.warning ? "warning" : "ok";
+  const lengthPieces = createPieces(lengthLayout, tileLengthMm);
+  const widthPieces = createPieces(widthLayout, tileWidthMm);
 
   $("layoutResults").innerHTML = `
     <div class="result-list">
@@ -290,7 +357,14 @@ function calculate() {
     value("tileThickness") *
     value("groutDensity");
   const groutTotal = groutKgM2 * areaM2 * 1.1;
-  const clips = Math.ceil(baseTiles * value("clipsPerTile") * 1.1);
+  const verticalJointSegments = Math.max(0, lengthLayout.pieces - 1) * widthLayout.pieces;
+  const horizontalJointSegments = Math.max(0, widthLayout.pieces - 1) * lengthLayout.pieces;
+  const clipsPerLengthEdge = Math.max(1, Math.ceil(tileLengthMm / 350));
+  const clipsPerWidthEdge = Math.max(1, Math.ceil(tileWidthMm / 350));
+  const clipBase =
+    (verticalJointSegments * clipsPerWidthEdge + horizontalJointSegments * clipsPerLengthEdge) *
+    Number(value("clipMode"));
+  const clips = Math.ceil(clipBase * (1 + value("clipWaste") / 100));
   const wedges = Math.ceil(Math.min(clips, Math.max(100, clips * 0.25)));
 
   $("materialResults").innerHTML = `
@@ -300,16 +374,72 @@ function calculate() {
       ${resultRow("Lap ráhagyással", `${buyTiles} db`)}
       ${resultRow("Ragasztó", `${kg(adhesiveKg)} ≈ ${bags} zsák`)}
       ${resultRow("Fugázó becslés", kg(groutTotal))}
+      ${resultRow("Papucs alap kiosztás", `${Math.ceil(clipBase)} db`)}
       ${resultRow(`${joint} mm-es papucs`, `${clips} db`)}
       ${resultRow("Ék becslés", `${wedges} db, mert újrahasználható`)}
     </div>
     <div class="note">
-      A ragasztó és fugázó gyártónként eltér. Ez első próbaszámolás; később beletehetünk konkrét
-      márka szerinti fogyást is.
+      A ragasztó és fugázó gyártónként eltér. Ez munkaközbeni becslés; pontosításhoz megadható
+      a választott termék gyártói fogyása.
     </div>
   `;
 
   drawLayout(lengthLayout, widthLayout, tileLengthMm, tileWidthMm, joint);
+  renderCutList(lengthPieces, widthPieces, tileLengthMm, tileWidthMm);
+}
+
+function getSavedProjects() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function setSavedProjects(projects) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+}
+
+function collectProject() {
+  const data = {};
+  fields.forEach((id) => {
+    data[id] = $(id).value;
+  });
+  return {
+    savedAt: new Date().toISOString(),
+    data,
+  };
+}
+
+function applyProject(project) {
+  if (!project || !project.data) return;
+  fields.forEach((id) => {
+    if (project.data[id] !== undefined) {
+      $(id).value = project.data[id];
+    }
+  });
+  calculate();
+}
+
+function refreshSavedProjects() {
+  const select = $("savedProjects");
+  const projects = getSavedProjects();
+  const names = Object.keys(projects).sort((a, b) => a.localeCompare(b, "hu"));
+
+  select.innerHTML =
+    names.length === 0
+      ? `<option value="">Nincs mentett projekt</option>`
+      : names.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+}
+
+function saveProject() {
+  const projects = getSavedProjects();
+  const name = String(value("projectName") || "").trim() || `Burkolat ${new Date().toLocaleDateString("hu-HU")}`;
+  $("projectName").value = name;
+  projects[name] = collectProject();
+  setSavedProjects(projects);
+  refreshSavedProjects();
+  $("savedProjects").value = name;
 }
 
 fields.forEach((id) => {
@@ -322,4 +452,29 @@ $("calculateButton").addEventListener("click", () => {
   $("eredmenyek").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
+$("saveProjectButton").addEventListener("click", () => {
+  saveProject();
+  calculate();
+});
+
+$("loadProjectButton").addEventListener("click", () => {
+  const projects = getSavedProjects();
+  applyProject(projects[$("savedProjects").value]);
+});
+
+$("deleteProjectButton").addEventListener("click", () => {
+  const name = $("savedProjects").value;
+  if (!name) return;
+  const projects = getSavedProjects();
+  delete projects[name];
+  setSavedProjects(projects);
+  refreshSavedProjects();
+});
+
+$("printButton").addEventListener("click", () => {
+  calculate();
+  window.print();
+});
+
+refreshSavedProjects();
 calculate();

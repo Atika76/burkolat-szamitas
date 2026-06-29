@@ -1,7 +1,7 @@
 {
   "name": "Burkoló lapkiosztó",
   "short_name": "Lapkiosztó",
-  "description": "Burkolandó felület lapkiosztása, vágások és első anyagbecslés.",
+  "description": "Burkolandó felület lapkiosztása, vágások, vágáslista és anyagbecslés.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
