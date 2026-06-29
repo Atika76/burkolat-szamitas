@@ -16,6 +16,7 @@
             Add meg a burkolandó felület és a lap méreteit, a program pedig kiszámolja a kezdő
             és záró vágásokat, plusz egy első anyagbecslést.
           </p>
+          <a class="hero-action" href="#eredmenyek">Számítás megtekintése</a>
         </div>
       </section>
 
@@ -37,14 +38,14 @@
             </span>
           </label>
           <label>
-            Lap hosszabb oldala
+            Lap egyik oldala
             <span class="input-row">
               <input id="tileLong" type="number" min="1" step="1" value="60" />
               <small>cm</small>
             </span>
           </label>
           <label>
-            Lap rövidebb oldala
+            Lap másik oldala
             <span class="input-row">
               <input id="tileShort" type="number" min="1" step="1" value="30" />
               <small>cm</small>
@@ -76,8 +77,8 @@
           <label>
             Lap iránya
             <select id="orientation">
-              <option value="long-length" selected>60 cm a felület hosszában</option>
-              <option value="long-width">60 cm a felület szélességében</option>
+              <option value="long-length" selected>Első megadott oldal a felület hosszában</option>
+              <option value="long-width">Első megadott oldal a felület szélességében</option>
             </select>
           </label>
         </div>
@@ -87,14 +88,14 @@
         <h2>Kiosztás módja</h2>
         <div class="grid two">
           <label>
-            7 m-es / hossz irány
+            Felület hossza irány
             <select id="lengthMode">
               <option value="center" selected>Középre igazítva, két oldalt egyforma</option>
               <option value="full">Egész lappal indul</option>
             </select>
           </label>
           <label>
-            3 m-es / szélesség irány
+            Felület szélessége irány
             <select id="widthMode">
               <option value="center">Középre igazítva, két oldalt egyforma</option>
               <option value="full" selected>Egész lappal indul</option>
@@ -151,7 +152,14 @@
         </div>
       </section>
 
-      <section class="results">
+      <section class="calculate-box">
+        <button id="calculateButton" type="button">Számítás / frissítés</button>
+        <p>
+          A számítás gépelés közben is frissül, de ezzel a gombbal egyből az eredményekhez ugorhatsz.
+        </p>
+      </section>
+
+      <section id="eredmenyek" class="results">
         <article class="card primary">
           <h2>Lapkiosztás</h2>
           <div id="layoutResults"></div>

@@ -317,4 +317,9 @@ fields.forEach((id) => {
   $(id).addEventListener("change", calculate);
 });
 
+$("calculateButton").addEventListener("click", () => {
+  calculate();
+  $("eredmenyek").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 calculate();
