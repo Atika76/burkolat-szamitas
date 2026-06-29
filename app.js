@@ -249,26 +249,38 @@ function renderCutList(lengthPieces, widthPieces, tileLength, tileWidth) {
 function drawLayout(lengthLayout, widthLayout, tileLength, tileWidth, joint) {
   const lengthPieces = createPieces(lengthLayout, tileLength);
   const widthPieces = createPieces(widthLayout, tileWidth);
-  const maxCols = 18;
-  const maxRows = 10;
-  const shownCols = lengthPieces.slice(0, maxCols);
-  const shownRows = widthPieces.slice(0, maxRows);
+
+  // A rajz V2-ben már nem vágja le automatikusan a 11., 12. stb. sort.
+  // Csak nagyon nagy kiosztásnál rövidít, hogy a böngésző ne lassuljon be.
+  const maxCols = 60;
+  const maxRows = 60;
+  const colsLimited = lengthPieces.length > maxCols;
+  const rowsLimited = widthPieces.length > maxRows;
+  const shownCols = colsLimited ? lengthPieces.slice(0, maxCols) : lengthPieces;
+  const shownRows = rowsLimited ? widthPieces.slice(0, maxRows) : widthPieces;
+
   const scaleX = 760 / Math.max(lengthLayout.available, 1);
   const scaleY = 360 / Math.max(widthLayout.available, 1);
   const scale = Math.min(scaleX, scaleY);
-  const pad = 38;
-  const width = Math.max(620, lengthLayout.available * scale + pad * 2);
-  const height = Math.max(280, widthLayout.available * scale + pad * 2);
+  const pad = 44;
+  const minPieceSize = 10;
 
   let y = pad;
   const rects = [];
+  const rowHeights = shownRows.map((row) => Math.max(minPieceSize, row.size * scale));
+  const colWidths = shownCols.map((col) => Math.max(minPieceSize, col.size * scale));
+  const drawnWidth = colWidths.reduce((sum, w) => sum + w, 0) + Math.max(0, shownCols.length - 1) * joint * scale;
+  const drawnHeight = rowHeights.reduce((sum, h) => sum + h, 0) + Math.max(0, shownRows.length - 1) * joint * scale;
+  const noteSpace = colsLimited || rowsLimited ? 42 : 24;
+  const width = Math.max(620, drawnWidth + pad * 2);
+  const height = Math.max(280, drawnHeight + pad * 2 + noteSpace);
 
   shownRows.forEach((row, rowIndex) => {
     let x = pad;
-    const h = Math.max(16, row.size * scale);
+    const h = rowHeights[rowIndex];
 
     shownCols.forEach((col, colIndex) => {
-      const w = Math.max(16, col.size * scale);
+      const w = colWidths[colIndex];
       const isCut = row.cut || col.cut;
       rects.push(
         `<rect class="tile ${isCut ? "cut" : ""}" x="${x}" y="${y}" width="${w}" height="${h}" rx="3"></rect>`
@@ -277,6 +289,12 @@ function drawLayout(lengthLayout, widthLayout, tileLength, tileWidth, joint) {
       if (rowIndex === 0 && (col.cut || colIndex === 0 || colIndex === shownCols.length - 1)) {
         rects.push(
           `<text class="svg-label" x="${x + 5}" y="${Math.max(18, y - 8)}">${cm(col.size)}</text>`
+        );
+      }
+
+      if (rowIndex === shownRows.length - 1 && row.cut && colIndex === Math.floor(shownCols.length / 2)) {
+        rects.push(
+          `<text class="svg-label" x="${x + 5}" y="${Math.min(height - 16, y + h + 18)}">${cm(row.size)} záró sor</text>`
         );
       }
 
@@ -290,24 +308,18 @@ function drawLayout(lengthLayout, widthLayout, tileLength, tileWidth, joint) {
     y += h + joint * scale;
   });
 
-  const colNote =
-    lengthPieces.length > maxCols
-      ? `<text class="svg-label" x="${pad}" y="${height - 10}">A rajz rövidítve van: ${lengthPieces.length} oszlopból ${maxCols} látszik.</text>`
-      : "";
-  const rowNote =
-    widthPieces.length > maxRows
-      ? `<text class="svg-label" x="${pad}" y="${height - 28}">A sorok is rövidítve vannak: ${widthPieces.length} sorból ${maxRows} látszik.</text>`
-      : "";
+  const visibleNote =
+    colsLimited || rowsLimited
+      ? `A rajz rövidítve van: ${lengthPieces.length} oszlopból ${shownCols.length}, ${widthPieces.length} sorból ${shownRows.length} látszik.`
+      : `Minden sor és oszlop látszik: ${lengthPieces.length} oszlop × ${widthPieces.length} sor.`;
 
   $("drawing").innerHTML = `
     <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Egyszerű lapkiosztási rajz">
       ${rects.join("")}
-      ${rowNote}
-      ${colNote}
+      <text class="svg-label" x="${pad}" y="${height - 10}">${visibleNote}</text>
     </svg>
   `;
 }
-
 function calculate() {
   const areaLengthMm = value("areaLength") * 1000;
   const areaWidthMm = value("areaWidth") * 1000;
