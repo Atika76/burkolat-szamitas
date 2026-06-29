@@ -478,7 +478,7 @@ function drawLayout(rows, joint, pattern, widthPiecesCount, lengthPiecesCount) {
   const scaleX = 760 / Math.max(totalWidthMm, 1);
   const scaleY = 360 / Math.max(totalHeightMm, 1);
   const scale = Math.min(scaleX, scaleY);
-  const pad = 44;
+  const pad = 96;
   const minPieceSize = 10;
   let y = pad;
   const rects = [];
@@ -494,16 +494,16 @@ function drawLayout(rows, joint, pattern, widthPiecesCount, lengthPiecesCount) {
       if (rowIndex === 0 && (col.cut || colIndex === 0 || colIndex === row.cols.length - 1)) {
         rects.push(`<text class="svg-label" x="${x + 5}" y="${Math.max(18, y - 8)}">${cm(col.size)}</text>`);
       }
-      if (rowIndex === shownColRows.length - 1 && row.cut && colIndex === Math.floor(row.cols.length / 2)) {
-        rects.push(`<text class="svg-label" x="${x + 5}" y="${y + h + 18}">${cm(row.height)} záró sor</text>`);
-      }
       if (pattern === "running-bond" && row.shifted && colIndex === 0) {
         rects.push(`<text class="svg-small" x="${x + 5}" y="${y + 16}">félkötés</text>`);
       }
       x += w + joint * scale;
     });
     if (row.cut || rowIndex === 0 || rowIndex === shownColRows.length - 1) {
-      rects.push(`<text class="svg-label" x="6" y="${y + h / 2 + 4}">${cm(row.height)}</text>`);
+      let rowLabel = cm(row.height);
+      if (rowIndex === 0) rowLabel = `Kezdő: ${cm(row.height)}`;
+      if (rowIndex === shownColRows.length - 1) rowLabel = `Záró: ${cm(row.height)}`;
+      rects.push(`<text class="svg-row-label" x="8" y="${y + h / 2 + 4}">${escapeHtml(rowLabel)}</text>`);
     }
     y += h + joint * scale;
   });

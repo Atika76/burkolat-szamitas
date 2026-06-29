@@ -452,6 +452,12 @@ svg {
   font-weight: 700;
 }
 
+.svg-row-label {
+  fill: #123044;
+  font-size: 12px;
+  font-weight: 850;
+}
+
 .svg-small {
   fill: #5e3fc2;
   font-size: 11px;
