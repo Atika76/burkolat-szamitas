@@ -1,0 +1,30 @@
+{
+  "name": "Burkoló lapkiosztó",
+  "short_name": "Lapkiosztó",
+  "description": "Burkolandó felület lapkiosztása, vágások és első anyagbecslés.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e7fbff",
+  "theme_color": "#1497d4",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
